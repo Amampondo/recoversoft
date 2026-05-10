@@ -12,7 +12,10 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from datetime import datetime, UTC, timedelta
 from functools import wraps
-import uuid, os, secrets
+import uuid, os, secrets, socket
+
+def log(msg):
+    print(f"{datetime.now(UTC).isoformat()} {msg}")
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///recoversoft.db')
@@ -257,6 +260,35 @@ def register_device():
                     contact=data.get("contact"))
     db.session.add(device)
     db.session.commit()
+    return jsonify({"message": "Device registered", "id": device.id}), 201
+
+@app.route("/api/devices/self-register", methods=["POST"])
+@require_auth
+def self_register_device():
+    """Device registers itself after user logs in on tracker app."""
+    user = get_current_user()
+    data = request.json or {}
+    device_id = data.get("device_id")
+    name      = data.get("name", socket.gethostname() if hasattr(socket, 'gethostname') else "Unknown")
+
+    if not device_id:
+        return jsonify({"error": "Missing device_id"}), 400
+
+    # Already registered? Just return OK
+    existing = Device.query.filter_by(device_id=device_id).first()
+    if existing:
+        return jsonify({"message": "Already registered", "id": existing.id}), 200
+
+    device = Device(
+        device_id=device_id,
+        name=name,
+        user_id=user.id,
+        org_id=user.org_id,
+        contact=user.contact
+    )
+    db.session.add(device)
+    db.session.commit()
+    log(f"Device self-registered: {device_id} by {user.email}")
     return jsonify({"message": "Device registered", "id": device.id}), 201
 
 @app.route("/api/devices", methods=["GET"])
