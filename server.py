@@ -928,6 +928,19 @@ document.addEventListener('keydown', e => {
 """
 
 if __name__ == "__main__":
+    # Run on every startup including Render
+    with app.app_context():
+        db.create_all()
+        if not User.query.filter_by(role="superadmin").first():
+            hashed = bcrypt.generate_password_hash("admin123").decode("utf-8")
+            admin = User(
+                name="Mpondo Mkhunyana",
+                email="admin@recoversoft.co.za",
+                password=hashed,
+                role="superadmin"
+            )
+            db.session.add(admin)
+            db.session.commit()
     init_db()
     print("RecoverSoft v2 running on http://0.0.0.0:5000")
     app.run(host="0.0.0.0", port=5000, debug=False)
