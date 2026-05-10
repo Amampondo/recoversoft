@@ -138,7 +138,7 @@ def create_tables():
         db.session.commit()
 
 # ... then all the routes start ...
-@app.route("/api/auth/login" ...
+
 # ── AUTH ROUTES ──────────────────────────────────────
 @app.route("/api/auth/register", methods=["POST"])
 @require_role("superadmin")
