@@ -113,7 +113,32 @@ def device_to_dict(device, latest_only=True):
         "city": latest.city if latest else None,
     }
     return d
+app = Flask(__name__)
 
+# ... all the app.config lines ...
+# ... db = SQLAlchemy(app) ...
+# ... jwt = JWTManager(app) ...
+# ... bcrypt = Bcrypt(app) ...
+
+# ... all the Models (Organisation, User, Device, Location) ...
+
+# ADD IT HERE — after models, before routes
+@app.before_request
+def create_tables():
+    db.create_all()
+    if not User.query.filter_by(role="superadmin").first():
+        hashed = bcrypt.generate_password_hash("admin123").decode("utf-8")
+        admin = User(
+            name="Mpondo Mkhunyana",
+            email="admin@recoversoft.co.za",
+            password=hashed,
+            role="superadmin"
+        )
+        db.session.add(admin)
+        db.session.commit()
+
+# ... then all the routes start ...
+@app.route("/api/auth/login" ...
 # ── AUTH ROUTES ──────────────────────────────────────
 @app.route("/api/auth/register", methods=["POST"])
 @require_role("superadmin")
